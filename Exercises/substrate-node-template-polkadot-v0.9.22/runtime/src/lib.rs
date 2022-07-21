@@ -138,6 +138,7 @@ const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
 	pub const Version: RuntimeVersion = VERSION;
+	pub const MaxOwnerKitty:u32 = 10;
 	/// We allow for 2 seconds of compute with a 6 second average block time.
 	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
 		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
@@ -270,6 +271,9 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_kitties::Config for Runtime {
 	type Event = Event;
+	type Currency = Balances;
+	type Moment = Timestamp;
+	type MaxOwnerKitty = MaxOwnerKitty;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
