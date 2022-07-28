@@ -5,20 +5,21 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 pub type Id = u32;
+use frame_support::dispatch::fmt;
 use frame_support::traits::Currency;
 use frame_support::traits::UnixTime;
 use sp_runtime::ArithmeticError;
@@ -29,7 +30,7 @@ type BalanceOf<T> =
 pub mod pallet {
 
 	pub use super::*;
-	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+	#[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Kitty<T: Config> {
 		pub dna: Vec<u8>,
@@ -37,6 +38,16 @@ pub mod pallet {
 		pub gender: Gender,
 		pub owner: T::AccountId,
 		pub created_date: u64,
+	}
+	impl<T: Config> fmt::Debug for Kitty<T> {
+		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+			f.debug_struct("Kitty")
+				.field("dna", &self.dna)
+				.field("price", &self.price)
+				.field("owner", &self.owner)
+				.field("created_date", &self.created_date)
+				.finish()
+		}
 	}
 	#[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 	pub enum Gender {
@@ -119,6 +130,7 @@ pub mod pallet {
 			let time = T::Moment::now();
 			log::info!("total balance:{:?}", T::Currency::total_balance(&owner));
 			let gender = Self::gen_gender(&dna)?;
+			log::info!("Gender : {:?}", gender);
 			let kitty = Kitty::<T> {
 				dna: dna.clone(),
 				price: 0u32.into(),
@@ -126,6 +138,7 @@ pub mod pallet {
 				owner: owner.clone(),
 				created_date: time.as_secs(),
 			};
+			log::info!("Kitty:{:?}", kitty);
 			let kitty_own = KittiesOwned::<T>::get(&owner);
 			ensure!(
 				kitty_own.len() < T::MaxOwnerKitty::get().try_into().unwrap(),
@@ -151,7 +164,7 @@ pub mod pallet {
 
 			Ok(())
 		}
-		#[pallet::weight(0)]
+		#[pallet::weight(78_000_000)]
 		pub fn transfer(origin: OriginFor<T>, to: T::AccountId, dna: Vec<u8>) -> DispatchResult {
 			// Make sure the caller is from a signed origin
 			let from = ensure_signed(origin)?;
