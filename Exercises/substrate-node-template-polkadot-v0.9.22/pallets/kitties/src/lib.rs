@@ -22,6 +22,8 @@ pub type Id = u32;
 use frame_support::dispatch::fmt;
 use frame_support::traits::Currency;
 use frame_support::traits::UnixTime;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::ArithmeticError;
 
 type BalanceOf<T> =
@@ -30,7 +32,9 @@ type BalanceOf<T> =
 pub mod pallet {
 
 	pub use super::*;
+
 	#[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 	#[scale_info(skip_type_params(T))]
 	pub struct Kitty<T: Config> {
 		pub dna: Vec<u8>,
@@ -49,7 +53,9 @@ pub mod pallet {
 				.finish()
 		}
 	}
+
 	#[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 	pub enum Gender {
 		Male,
 		Female,
@@ -115,7 +121,39 @@ pub mod pallet {
 		TransferToSelf,
 		KittyOverFlow,
 	}
-
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub genesis_kitties: Vec<Vec<u8>>,
+		pub owner: Option<T::AccountId>,
+		pub current_time: u64,
+	}
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				genesis_kitties: Default::default(),
+				owner: Default::default(),
+				current_time: Default::default(),
+			}
+		}
+	}
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for item in self.genesis_kitties.iter() {
+				let kitty = Kitty::<T> {
+					// dna: item,
+					// dna: Pallet::<T>::gen_dna(),
+					dna: b"tuan".as_slice().to_vec(),
+					price: 100u32.into(),
+					owner: self.owner.clone().unwrap(),
+					gender: Gender::Female,
+					created_date: self.current_time,
+				};
+				Kitties::<T>::insert(item, kitty);
+			}
+		}
+	}
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
